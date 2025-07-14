@@ -119,7 +119,7 @@ fieldset input[type="checkbox"] {
 
 /* === TABLA DE INVENTARIO (ESCRITORIO) === */
 .table-container {
-    overflow-x: auto; /* Permite scroll horizontal si es necesario en pantallas medianas */
+    overflow-x: auto;
 }
 
 table {
@@ -159,6 +159,47 @@ table button:hover {
     transform: scale(1.2);
 }
 
+/* === ESTILOS PARA PESTAÑAS (VIEW SWITCHER) === */
+.view-switcher {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid var(--color-borde);
+}
+
+.view-switcher button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  background-color: transparent;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--color-texto);
+  border-bottom: 2px solid transparent;
+  transform: translateY(2px);
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.view-switcher button:hover {
+  color: var(--color-primario);
+}
+
+.view-switcher button.active {
+  color: var(--color-primario);
+  border-bottom-color: var(--color-primario);
+}
+
+/* === CONTENEDOR DE FILTROS === */
+.filtros-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background-color: #f8fafc;
+  border-radius: var(--radio-borde);
+}
+
 /* === DISEÑO RESPONSIVO PARA LA TABLA (MÓVIL) === */
 @media (max-width: 768px) {
   .container {
@@ -174,11 +215,11 @@ table button:hover {
   }
 
   table thead {
-    display: none; /* Oculta los encabezados de la tabla */
+    display: none;
   }
 
   table, table tbody, table tr, table td {
-    display: block; /* Convierte la tabla en bloques */
+    display: block;
     width: 100%;
   }
 
@@ -190,7 +231,7 @@ table button:hover {
   }
 
   table td {
-    padding-left: 50%; /* Espacio para el label */
+    padding-left: 50%;
     position: relative;
     text-align: right;
     border-bottom: 1px solid var(--color-borde);
@@ -201,7 +242,7 @@ table button:hover {
   }
 
   table td::before {
-    content: attr(data-label); /* Usa el atributo data-label como el texto del encabezado */
+    content: attr(data-label);
     position: absolute;
     left: 1rem;
     width: 45%;
@@ -210,4 +251,4 @@ table button:hover {
     font-weight: 600;
     color: var(--color-primario);
   }
-} 
+}
