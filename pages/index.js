@@ -9,7 +9,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 
-// Lista de modelos, colores y capacidades
+// --- DATOS DE CONFIGURACIÓN ---
 const modelos = [
   { modelo: "iPhone 11", colores: ["Black", "Green", "Purple", "Red", "White", "Yellow"], capacidades: ["64 GB", "128 GB", "256 GB"] },
   { modelo: "iPhone 11 Pro", colores: ["Gold", "Space Gray", "Silver", "Midnight Green"], capacidades: ["64 GB", "256 GB", "512 GB"] },
@@ -30,50 +30,51 @@ const modelos = [
   { modelo: "iPhone 16 Pro", colores: ["Titan Gray", "Silver", "Dark Blue"], capacidades: ["256 GB", "512 GB", "1 TB"] },
   { modelo: "iPhone 16 Pro Max", colores: ["Titan Gray", "Silver", "Dark Blue"], capacidades: ["256 GB", "512 GB", "1 TB"] }
 ];
-
 const accesorios = ["Caja y cable", "Caja", "Cable", "Sin caja"];
 const estados = ["Disponible", "Vendido", "Reservado"];
+// Extraer todas las capacidades únicas para el filtro
+const todasLasCapacidades = [...new Set(modelos.flatMap(m => m.capacidades))];
+
 
 export default function Home() {
-  // Estado inicial del formulario
+  // --- ESTADOS ---
   const estadoInicialFormulario = {
     modelo: "", color: "", capacidad: "", imei: "", condicion: "Usado",
     bateria: "", accesorios: "", costo: "", estado: "Disponible", detalles: [],
     mensajePieza: "", estrelladoParte: "", otroDetalle: ""
   };
-
   const [form, setForm] = useState(estadoInicialFormulario);
   const [inventario, setInventario] = useState([]);
+  const [vistaActiva, setVistaActiva] = useState('consulta'); // 'consulta' o 'registro'
+  const [filtros, setFiltros] = useState({ modelo: '', capacidad: '' });
 
-  // Encuentra el modelo seleccionado para mostrar colores y capacidades
-  const modeloSeleccionado = modelos.find(m => m.modelo === form.modelo);
-
-  // Efecto para obtener datos de Firebase en tiempo real
+  // --- EFECTOS ---
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "inventario"), (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setInventario(data);
     });
-    return () => unsub(); // Limpia la suscripción al desmontar el componente
+    return () => unsub();
   }, []);
 
-  // Maneja los cambios en los campos del formulario
-  const handleChange = (e) => {
+  // --- MANEJADORES DE EVENTOS ---
+  const handleFormChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  // Maneja los cambios en los checkboxes de detalles
-  const handleDetalles = (e) => {
+  const handleDetallesChange = (e) => {
     const { value, checked } = e.target;
     setForm(prev => ({
       ...prev,
-      detalles: checked
-        ? [...prev.detalles, value]
-        : prev.detalles.filter(d => d !== value)
+      detalles: checked ? [...prev.detalles, value] : prev.detalles.filter(d => d !== value)
     }));
   };
+  
+  const handleFiltroChange = (e) => {
+    setFiltros({ ...filtros, [e.target.name]: e.target.value });
+  };
 
-  // Guarda un nuevo artículo en el inventario
+  // --- LÓGICA DE FIREBASE ---
   const guardar = async () => {
     if (!form.modelo || !form.imei || !form.costo) {
         alert("Por favor, completa los campos Modelo, IMEI y Costo.");
@@ -85,119 +86,147 @@ export default function Home() {
       bateria: Number(form.bateria) || 0,
       fecha: new Date().toLocaleDateString()
     });
-    setForm(estadoInicialFormulario); // Resetea el formulario
+    setForm(estadoInicialFormulario);
+    alert("¡Equipo agregado al inventario!");
   };
 
-  // Elimina un artículo del inventario
   const eliminar = async (id) => {
     if (confirm("¿Estás seguro de que quieres eliminar este artículo?")) {
         await deleteDoc(doc(db, "inventario", id));
     }
   };
 
-  // Cambia el estado de un artículo
   const cambiarEstado = async (id, nuevoEstado) => {
     await updateDoc(doc(db, "inventario", id), { estado: nuevoEstado });
   };
 
+  // --- LÓGICA DE FILTRADO ---
+  const inventarioFiltrado = inventario.filter(item => {
+    const pasaModelo = filtros.modelo ? item.modelo === filtros.modelo : true;
+    const pasaCapacidad = filtros.capacidad ? item.capacidad === filtros.capacidad : true;
+    return pasaModelo && pasaCapacidad;
+  });
+
+  // --- RENDERIZADO ---
+  const modeloSeleccionado = modelos.find(m => m.modelo === form.modelo);
+
   return (
     <div className="container">
       <h1>📱 Inventario CELMX</h1>
-
-      <div className="formulario">
-        <select name="modelo" value={form.modelo} onChange={handleChange}>
-          <option value="">Selecciona Modelo</option>
-          {modelos.map((m) => <option key={m.modelo} value={m.modelo}>{m.modelo}</option>)}
-        </select>
-
-        <select name="color" value={form.color} onChange={handleChange} disabled={!modeloSeleccionado}>
-          <option value="">Selecciona Color</option>
-          {modeloSeleccionado?.colores.map((c) => <option key={c}>{c}</option>)}
-        </select>
-
-        <select name="capacidad" value={form.capacidad} onChange={handleChange} disabled={!modeloSeleccionado}>
-          <option value="">Selecciona Capacidad</option>
-          {modeloSeleccionado?.capacidades.map((c) => <option key={c}>{c}</option>)}
-        </select>
-
-        <input name="imei" maxLength={5} placeholder="IMEI (últimos 5)" value={form.imei} onChange={handleChange} />
-        <select name="condicion" value={form.condicion} onChange={handleChange}>
-          <option>Usado</option><option>Nuevo</option>
-        </select>
-        
-        <input name="bateria" placeholder="Condición Batería %" type="number" value={form.bateria} onChange={handleChange} />
-
-        <select name="accesorios" value={form.accesorios} onChange={handleChange}>
-          <option value="">Accesorios</option>
-          {accesorios.map((a) => <option key={a}>{a}</option>)}
-        </select>
-        <input name="costo" placeholder="Costo" type="number" value={form.costo} onChange={handleChange} />
-        <select name="estado" value={form.estado} onChange={handleChange}>
-          {estados.map((e) => <option key={e}>{e}</option>)}
-        </select>
-
-        <fieldset>
-          <legend>Detalles Adicionales</legend>
-          {["Face ID", "Zoom", "Mensaje pieza", "Estrellado", "Otro"].map((d) => (
-            <label key={d}><input type="checkbox" value={d} onChange={handleDetalles} checked={form.detalles.includes(d)} /> {d}</label>
-          ))}
-          {form.detalles.includes("Mensaje pieza") && (
-            <input placeholder="¿Qué mensaje da?" name="mensajePieza" value={form.mensajePieza} onChange={handleChange} />
-          )}
-          {form.detalles.includes("Estrellado") && (
-            <input placeholder="¿Dónde está estrellado?" name="estrelladoParte" value={form.estrelladoParte} onChange={handleChange} />
-          )}
-          {form.detalles.includes("Otro") && (
-            <input placeholder="¿Qué otro detalle?" name="otroDetalle" value={form.otroDetalle} onChange={handleChange} />
-          )}
-        </fieldset>
-
-        <button onClick={guardar}>➕ Agregar al Inventario</button>
+      
+      {/* Pestañas para cambiar de vista */}
+      <div className="view-switcher">
+        <button onClick={() => setVistaActiva('consulta')} className={vistaActiva === 'consulta' ? 'active' : ''}>
+          Consultar Inventario
+        </button>
+        <button onClick={() => setVistaActiva('registro')} className={vistaActiva === 'registro' ? 'active' : ''}>
+          Registrar Equipo
+        </button>
       </div>
 
-      <h2>📋 Inventario Actual</h2>
-      <div className="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Modelo</th><th>Color</th><th>Capacidad</th><th>IMEI</th><th>Condición</th>
-              <th>Batería</th><th>Accesorios</th><th>Costo</th><th>Estado</th>
-              <th>Fecha</th><th>Detalles</th><th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {inventario.map((item) => (
-              <tr key={item.id}>
-                <td data-label="Modelo">{item.modelo}</td>
-                <td data-label="Color">{item.color}</td>
-                <td data-label="Capacidad">{item.capacidad}</td>
-                <td data-label="IMEI">{item.imei}</td>
-                <td data-label="Condición">{item.condicion}</td>
-                <td data-label="Batería">{item.bateria ? `${item.bateria}%` : 'N/A'}</td>
-                <td data-label="Accesorios">{item.accesorios}</td>
-                <td data-label="Costo">{`$${item.costo}`}</td>
-                <td data-label="Estado">
-                  <select value={item.estado} onChange={(e) => cambiarEstado(item.id, e.target.value)}>
-                    {estados.map((s) => <option key={s}>{s}</option>)}
-                  </select>
-                </td>
-                <td data-label="Fecha">{item.fecha}</td>
-                <td data-label="Detalles">
-                  {item.detalles?.map(detalle => {
-                    if (detalle === "Otro" && item.otroDetalle) return `Otro: ${item.otroDetalle}`;
-                    if (detalle === "Mensaje pieza" && item.mensajePieza) return `Mensaje pieza: ${item.mensajePieza}`;
-                    if (detalle === "Estrellado" && item.estrelladoParte) return `Estrellado: ${item.estrelladoParte}`;
-                    return detalle;
-                  }).join(", ") || "Ninguno"}
-                </td>
-                <td data-label="Acciones">
-                    <button onClick={() => eliminar(item.id)}>❌</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* Vista de Consulta */}
+      {vistaActiva === 'consulta' && (
+        <div id="consulta-view">
+          <h2>📋 Consulta de Inventario</h2>
+          <div className="filtros-container">
+              <select name="modelo" value={filtros.modelo} onChange={handleFiltroChange}>
+                  <option value="">Filtrar por Modelo</option>
+                  {modelos.map(m => <option key={m.modelo} value={m.modelo}>{m.modelo}</option>)}
+              </select>
+              <select name="capacidad" value={filtros.capacidad} onChange={handleFiltroChange}>
+                  <option value="">Filtrar por Capacidad</option>
+                  {todasLasCapacidades.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+          </div>
+
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Modelo</th><th>Color</th><th>Capacidad</th><th>IMEI</th><th>Condición</th>
+                  <th>Batería</th><th>Accesorios</th><th>Costo</th><th>Estado</th>
+                  <th>Fecha</th><th>Detalles</th><th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {inventarioFiltrado.map((item) => (
+                  <tr key={item.id}>
+                    <td data-label="Modelo">{item.modelo}</td>
+                    <td data-label="Color">{item.color}</td>
+                    <td data-label="Capacidad">{item.capacidad}</td>
+                    <td data-label="IMEI">{item.imei}</td>
+                    <td data-label="Condición">{item.condicion}</td>
+                    <td data-label="Batería">{item.bateria ? `${item.bateria}%` : 'N/A'}</td>
+                    <td data-label="Accesorios">{item.accesorios}</td>
+                    <td data-label="Costo">{`$${item.costo}`}</td>
+                    <td data-label="Estado">
+                      <select value={item.estado} onChange={(e) => cambiarEstado(item.id, e.target.value)}>
+                        {estados.map((s) => <option key={s}>{s}</option>)}
+                      </select>
+                    </td>
+                    <td data-label="Fecha">{item.fecha}</td>
+                    <td data-label="Detalles">
+                      {item.detalles?.map(detalle => {
+                        if (detalle === "Otro" && item.otroDetalle) return `Otro: ${item.otroDetalle}`;
+                        if (detalle === "Mensaje pieza" && item.mensajePieza) return `Mensaje pieza: ${item.mensajePieza}`;
+                        if (detalle === "Estrellado" && item.estrelladoParte) return `Estrellado: ${item.estrelladoParte}`;
+                        return detalle;
+                      }).join(", ") || "Ninguno"}
+                    </td>
+                    <td data-label="Acciones">
+                        <button onClick={() => eliminar(item.id)}>❌</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Vista de Registro */}
+      {vistaActiva === 'registro' && (
+        <div id="registro-view">
+            <h2>➕ Registrar Nuevo Equipo</h2>
+            <div className="formulario">
+                <select name="modelo" value={form.modelo} onChange={handleFormChange}>
+                    <option value="">Selecciona Modelo</option>
+                    {modelos.map((m) => <option key={m.modelo} value={m.modelo}>{m.modelo}</option>)}
+                </select>
+                <select name="color" value={form.color} onChange={handleFormChange} disabled={!modeloSeleccionado}>
+                    <option value="">Selecciona Color</option>
+                    {modeloSeleccionado?.colores.map((c) => <option key={c}>{c}</option>)}
+                </select>
+                <select name="capacidad" value={form.capacidad} onChange={handleFormChange} disabled={!modeloSeleccionado}>
+                    <option value="">Selecciona Capacidad</option>
+                    {modeloSeleccionado?.capacidades.map((c) => <option key={c}>{c}</option>)}
+                </select>
+                <input name="imei" maxLength={5} placeholder="IMEI (últimos 5)" value={form.imei} onChange={handleFormChange} />
+                <select name="condicion" value={form.condicion} onChange={handleFormChange}>
+                    <option>Usado</option><option>Nuevo</option>
+                </select>
+                <input name="bateria" placeholder="Condición Batería %" type="number" value={form.bateria} onChange={handleFormChange} />
+                <select name="accesorios" value={form.accesorios} onChange={handleFormChange}>
+                    <option value="">Accesorios</option>
+                    {accesorios.map((a) => <option key={a}>{a}</option>)}
+                </select>
+                <input name="costo" placeholder="Costo" type="number" value={form.costo} onChange={handleFormChange} />
+                <select name="estado" value={form.estado} onChange={handleFormChange}>
+                    {estados.map((e) => <option key={e}>{e}</option>)}
+                </select>
+                <fieldset>
+                    <legend>Detalles Adicionales</legend>
+                    {["Face ID", "Zoom", "Mensaje pieza", "Estrellado", "Otro"].map((d) => (
+                        <label key={d}><input type="checkbox" value={d} onChange={handleDetallesChange} checked={form.detalles.includes(d)} /> {d}</label>
+                    ))}
+                    {form.detalles.includes("Mensaje pieza") && <input placeholder="¿Qué mensaje da?" name="mensajePieza" value={form.mensajePieza} onChange={handleFormChange} />}
+                    {form.detalles.includes("Estrellado") && <input placeholder="¿Dónde está estrellado?" name="estrelladoParte" value={form.estrelladoParte} onChange={handleFormChange} />}
+                    {form.detalles.includes("Otro") && <input placeholder="¿Qué otro detalle?" name="otroDetalle" value={form.otroDetalle} onChange={handleFormChange} />}
+                </fieldset>
+                <button onClick={guardar}>➕ Agregar al Inventario</button>
+            </div>
+        </div>
+      )}
     </div>
   );
 }
