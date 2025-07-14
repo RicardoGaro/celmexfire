@@ -9,6 +9,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 
+// Lista de modelos, colores y capacidades
 const modelos = [
   { modelo: "iPhone 11", colores: ["Black", "Green", "Purple", "Red", "White", "Yellow"], capacidades: ["64 GB", "128 GB", "256 GB"] },
   { modelo: "iPhone 11 Pro", colores: ["Gold", "Space Gray", "Silver", "Midnight Green"], capacidades: ["64 GB", "256 GB", "512 GB"] },
@@ -34,53 +35,67 @@ const accesorios = ["Caja y cable", "Caja", "Cable", "Sin caja"];
 const estados = ["Disponible", "Vendido", "Reservado"];
 
 export default function Home() {
-  const [form, setForm] = useState({
+  // Estado inicial del formulario
+  const estadoInicialFormulario = {
     modelo: "", color: "", capacidad: "", imei: "", condicion: "Usado",
-    accesorios: "", costo: "", estado: "Disponible", detalles: [],
+    bateria: "", accesorios: "", costo: "", estado: "Disponible", detalles: [],
     mensajePieza: "", estrelladoParte: "", otroDetalle: ""
-  });
+  };
+
+  const [form, setForm] = useState(estadoInicialFormulario);
   const [inventario, setInventario] = useState([]);
 
+  // Encuentra el modelo seleccionado para mostrar colores y capacidades
   const modeloSeleccionado = modelos.find(m => m.modelo === form.modelo);
 
+  // Efecto para obtener datos de Firebase en tiempo real
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "inventario"), (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setInventario(data);
     });
-    return () => unsub();
+    return () => unsub(); // Limpia la suscripción al desmontar el componente
   }, []);
 
+  // Maneja los cambios en los campos del formulario
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  // Maneja los cambios en los checkboxes de detalles
   const handleDetalles = (e) => {
-    const value = e.target.value;
+    const { value, checked } = e.target;
     setForm(prev => ({
       ...prev,
-      detalles: prev.detalles.includes(value)
-        ? prev.detalles.filter(d => d !== value)
-        : [...prev.detalles, value]
+      detalles: checked
+        ? [...prev.detalles, value]
+        : prev.detalles.filter(d => d !== value)
     }));
   };
 
+  // Guarda un nuevo artículo en el inventario
   const guardar = async () => {
+    if (!form.modelo || !form.imei || !form.costo) {
+        alert("Por favor, completa los campos Modelo, IMEI y Costo.");
+        return;
+    }
     await addDoc(collection(db, "inventario"), {
       ...form,
+      costo: Number(form.costo) || 0,
+      bateria: Number(form.bateria) || 0,
       fecha: new Date().toLocaleDateString()
     });
-    setForm({
-      modelo: "", color: "", capacidad: "", imei: "", condicion: "Usado",
-      accesorios: "", costo: "", estado: "Disponible", detalles: [],
-      mensajePieza: "", estrelladoParte: "", otroDetalle: ""
-    });
+    setForm(estadoInicialFormulario); // Resetea el formulario
   };
 
+  // Elimina un artículo del inventario
   const eliminar = async (id) => {
-    await deleteDoc(doc(db, "inventario", id));
+    if (confirm("¿Estás seguro de que quieres eliminar este artículo?")) {
+        await deleteDoc(doc(db, "inventario", id));
+    }
   };
 
+  // Cambia el estado de un artículo
   const cambiarEstado = async (id, nuevoEstado) => {
     await updateDoc(doc(db, "inventario", id), { estado: nuevoEstado });
   };
@@ -91,37 +106,40 @@ export default function Home() {
 
       <div className="formulario">
         <select name="modelo" value={form.modelo} onChange={handleChange}>
-          <option value="">Modelo</option>
-          {modelos.map((m, i) => <option key={i} value={m.modelo}>{m.modelo}</option>)}
+          <option value="">Selecciona Modelo</option>
+          {modelos.map((m) => <option key={m.modelo} value={m.modelo}>{m.modelo}</option>)}
         </select>
 
         <select name="color" value={form.color} onChange={handleChange} disabled={!modeloSeleccionado}>
-          <option value="">Color</option>
-          {modeloSeleccionado?.colores.map((c, i) => <option key={i}>{c}</option>)}
+          <option value="">Selecciona Color</option>
+          {modeloSeleccionado?.colores.map((c) => <option key={c}>{c}</option>)}
         </select>
 
         <select name="capacidad" value={form.capacidad} onChange={handleChange} disabled={!modeloSeleccionado}>
-          <option value="">Capacidad</option>
-          {modeloSeleccionado?.capacidades.map((c, i) => <option key={i}>{c}</option>)}
+          <option value="">Selecciona Capacidad</option>
+          {modeloSeleccionado?.capacidades.map((c) => <option key={c}>{c}</option>)}
         </select>
 
         <input name="imei" maxLength={5} placeholder="IMEI (últimos 5)" value={form.imei} onChange={handleChange} />
         <select name="condicion" value={form.condicion} onChange={handleChange}>
           <option>Usado</option><option>Nuevo</option>
         </select>
+        
+        <input name="bateria" placeholder="Condición Batería %" type="number" value={form.bateria} onChange={handleChange} />
+
         <select name="accesorios" value={form.accesorios} onChange={handleChange}>
           <option value="">Accesorios</option>
-          {accesorios.map((a, i) => <option key={i}>{a}</option>)}
+          {accesorios.map((a) => <option key={a}>{a}</option>)}
         </select>
         <input name="costo" placeholder="Costo" type="number" value={form.costo} onChange={handleChange} />
         <select name="estado" value={form.estado} onChange={handleChange}>
-          {estados.map((e, i) => <option key={i}>{e}</option>)}
+          {estados.map((e) => <option key={e}>{e}</option>)}
         </select>
 
         <fieldset>
-          <legend>Detalles</legend>
-          {["Face ID", "Zoom", "Mensaje pieza", "Estrellado", "Otro"].map((d, i) => (
-            <label key={i}><input type="checkbox" value={d} onChange={handleDetalles} checked={form.detalles.includes(d)} /> {d}</label>
+          <legend>Detalles Adicionales</legend>
+          {["Face ID", "Zoom", "Mensaje pieza", "Estrellado", "Otro"].map((d) => (
+            <label key={d}><input type="checkbox" value={d} onChange={handleDetalles} checked={form.detalles.includes(d)} /> {d}</label>
           ))}
           {form.detalles.includes("Mensaje pieza") && (
             <input placeholder="¿Qué mensaje da?" name="mensajePieza" value={form.mensajePieza} onChange={handleChange} />
@@ -134,34 +152,52 @@ export default function Home() {
           )}
         </fieldset>
 
-        <button onClick={guardar}>➕ Agregar</button>
+        <button onClick={guardar}>➕ Agregar al Inventario</button>
       </div>
 
-      <h2>📋 Inventario</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Modelo</th><th>Color</th><th>Capacidad</th><th>IMEI</th><th>Condición</th>
-            <th>Accesorios</th><th>Costo</th><th>Estado</th><th>Fecha</th><th>Detalles</th><th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {inventario.map((item) => (
-            <tr key={item.id}>
-              <td>{item.modelo}</td><td>{item.color}</td><td>{item.capacidad}</td><td>{item.imei}</td>
-              <td>{item.condicion}</td><td>{item.accesorios}</td><td>{item.costo}</td>
-              <td>
-                <select value={item.estado} onChange={(e) => cambiarEstado(item.id, e.target.value)}>
-                  {estados.map((s, i) => <option key={i}>{s}</option>)}
-                </select>
-              </td>
-              <td>{item.fecha}</td>
-              <td>{item.detalles?.join(", ")}</td>
-              <td><button onClick={() => eliminar(item.id)}>❌</button></td>
+      <h2>📋 Inventario Actual</h2>
+      <div className="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Modelo</th><th>Color</th><th>Capacidad</th><th>IMEI</th><th>Condición</th>
+              <th>Batería</th><th>Accesorios</th><th>Costo</th><th>Estado</th>
+              <th>Fecha</th><th>Detalles</th><th>Acciones</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {inventario.map((item) => (
+              <tr key={item.id}>
+                <td data-label="Modelo">{item.modelo}</td>
+                <td data-label="Color">{item.color}</td>
+                <td data-label="Capacidad">{item.capacidad}</td>
+                <td data-label="IMEI">{item.imei}</td>
+                <td data-label="Condición">{item.condicion}</td>
+                <td data-label="Batería">{item.bateria ? `${item.bateria}%` : 'N/A'}</td>
+                <td data-label="Accesorios">{item.accesorios}</td>
+                <td data-label="Costo">{`$${item.costo}`}</td>
+                <td data-label="Estado">
+                  <select value={item.estado} onChange={(e) => cambiarEstado(item.id, e.target.value)}>
+                    {estados.map((s) => <option key={s}>{s}</option>)}
+                  </select>
+                </td>
+                <td data-label="Fecha">{item.fecha}</td>
+                <td data-label="Detalles">
+                  {item.detalles?.map(detalle => {
+                    if (detalle === "Otro" && item.otroDetalle) return `Otro: ${item.otroDetalle}`;
+                    if (detalle === "Mensaje pieza" && item.mensajePieza) return `Mensaje pieza: ${item.mensajePieza}`;
+                    if (detalle === "Estrellado" && item.estrelladoParte) return `Estrellado: ${item.estrelladoParte}`;
+                    return detalle;
+                  }).join(", ") || "Ninguno"}
+                </td>
+                <td data-label="Acciones">
+                    <button onClick={() => eliminar(item.id)}>❌</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
