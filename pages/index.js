@@ -32,8 +32,41 @@ const modelos = [
 ];
 const accesorios = ["Caja y cable", "Caja", "Cable", "Sin caja"];
 const estados = ["Disponible", "Vendido", "Reservado"];
-// Extraer todas las capacidades únicas para el filtro
 const todasLasCapacidades = [...new Set(modelos.flatMap(m => m.capacidades))];
+
+// --- COMPONENTE DE TARJETA DE INVENTARIO ---
+const InventoryCard = ({ item, onEliminar, onCambiarEstado }) => {
+  const detallesFormateados = item.detalles?.map(detalle => {
+    if (detalle === "Otro" && item.otroDetalle) return `Otro: ${item.otroDetalle}`;
+    if (detalle === "Mensaje pieza" && item.mensajePieza) return `Mensaje pieza: ${item.mensajePieza}`;
+    if (detalle === "Estrellado" && item.estrelladoParte) return `Estrellado: ${item.estrelladoParte}`;
+    return detalle;
+  }).join(", ") || "Ninguno";
+
+  return (
+    <div className="inventory-card">
+      <div className="card-header">
+        <h3>{item.modelo}</h3>
+        <span className={`item-status ${item.estado?.toLowerCase()}`}>{item.estado}</span>
+      </div>
+      <div className="card-body">
+        <div className="info-item"><span>Color</span><span>{item.color || 'N/A'}</span></div>
+        <div className="info-item"><span>Capacidad</span><span>{item.capacidad || 'N/A'}</span></div>
+        <div className="info-item"><span>Batería</span><span>{item.bateria ? `${item.bateria}%` : 'N/A'}</span></div>
+        <div className="info-item"><span>Condición</span><span>{item.condicion || 'N/A'}</span></div>
+        <div className="info-item"><span>IMEI</span><span>...{item.imei}</span></div>
+        <div className="info-item"><span>Accesorios</span><span>{item.accesorios || 'N/A'}</span></div>
+      </div>
+      <div className="card-details">
+        <strong>Detalles:</strong> {detallesFormateados}
+      </div>
+      <div className="card-footer">
+        <span className="costo">${new Intl.NumberFormat('es-MX').format(item.costo)}</span>
+        <button onClick={() => onEliminar(item.id)} title="Eliminar">🗑️</button>
+      </div>
+    </div>
+  );
+};
 
 
 export default function Home() {
@@ -45,7 +78,7 @@ export default function Home() {
   };
   const [form, setForm] = useState(estadoInicialFormulario);
   const [inventario, setInventario] = useState([]);
-  const [vistaActiva, setVistaActiva] = useState('consulta'); // 'consulta' o 'registro'
+  const [vistaActiva, setVistaActiva] = useState('consulta');
   const [filtros, setFiltros] = useState({ modelo: '', capacidad: '' });
 
   // --- EFECTOS ---
@@ -58,20 +91,14 @@ export default function Home() {
   }, []);
 
   // --- MANEJADORES DE EVENTOS ---
-  const handleFormChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
+  const handleFormChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleFiltroChange = (e) => setFiltros({ ...filtros, [e.target.name]: e.target.value });
   const handleDetallesChange = (e) => {
     const { value, checked } = e.target;
     setForm(prev => ({
       ...prev,
       detalles: checked ? [...prev.detalles, value] : prev.detalles.filter(d => d !== value)
     }));
-  };
-  
-  const handleFiltroChange = (e) => {
-    setFiltros({ ...filtros, [e.target.name]: e.target.value });
   };
 
   // --- LÓGICA DE FIREBASE ---
@@ -84,10 +111,11 @@ export default function Home() {
       ...form,
       costo: Number(form.costo) || 0,
       bateria: Number(form.bateria) || 0,
-      fecha: new Date().toLocaleDateString()
+      fecha: new Date().toLocaleDateString('es-MX')
     });
     setForm(estadoInicialFormulario);
     alert("¡Equipo agregado al inventario!");
+    setVistaActiva('consulta'); // Cambiar a la vista de consulta después de guardar
   };
 
   const eliminar = async (id) => {
@@ -107,14 +135,12 @@ export default function Home() {
     return pasaModelo && pasaCapacidad;
   });
 
-  // --- RENDERIZADO ---
   const modeloSeleccionado = modelos.find(m => m.modelo === form.modelo);
 
   return (
     <div className="container">
       <h1>📱 Inventario CELMX</h1>
       
-      {/* Pestañas para cambiar de vista */}
       <div className="view-switcher">
         <button onClick={() => setVistaActiva('consulta')} className={vistaActiva === 'consulta' ? 'active' : ''}>
           Consultar Inventario
@@ -124,67 +150,34 @@ export default function Home() {
         </button>
       </div>
 
-      {/* Vista de Consulta */}
       {vistaActiva === 'consulta' && (
         <div id="consulta-view">
-          <h2>📋 Consulta de Inventario</h2>
+          <h2>Filtros de Búsqueda</h2>
           <div className="filtros-container">
               <select name="modelo" value={filtros.modelo} onChange={handleFiltroChange}>
-                  <option value="">Filtrar por Modelo</option>
+                  <option value="">Todos los Modelos</option>
                   {modelos.map(m => <option key={m.modelo} value={m.modelo}>{m.modelo}</option>)}
               </select>
               <select name="capacidad" value={filtros.capacidad} onChange={handleFiltroChange}>
-                  <option value="">Filtrar por Capacidad</option>
+                  <option value="">Todas las Capacidades</option>
                   {todasLasCapacidades.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
           </div>
 
-          <div className="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Modelo</th><th>Color</th><th>Capacidad</th><th>IMEI</th><th>Condición</th>
-                  <th>Batería</th><th>Accesorios</th><th>Costo</th><th>Estado</th>
-                  <th>Fecha</th><th>Detalles</th><th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {inventarioFiltrado.map((item) => (
-                  <tr key={item.id}>
-                    <td data-label="Modelo">{item.modelo}</td>
-                    <td data-label="Color">{item.color}</td>
-                    <td data-label="Capacidad">{item.capacidad}</td>
-                    <td data-label="IMEI">{item.imei}</td>
-                    <td data-label="Condición">{item.condicion}</td>
-                    <td data-label="Batería">{item.bateria ? `${item.bateria}%` : 'N/A'}</td>
-                    <td data-label="Accesorios">{item.accesorios}</td>
-                    <td data-label="Costo">{`$${item.costo}`}</td>
-                    <td data-label="Estado">
-                      <select value={item.estado} onChange={(e) => cambiarEstado(item.id, e.target.value)}>
-                        {estados.map((s) => <option key={s}>{s}</option>)}
-                      </select>
-                    </td>
-                    <td data-label="Fecha">{item.fecha}</td>
-                    <td data-label="Detalles">
-                      {item.detalles?.map(detalle => {
-                        if (detalle === "Otro" && item.otroDetalle) return `Otro: ${item.otroDetalle}`;
-                        if (detalle === "Mensaje pieza" && item.mensajePieza) return `Mensaje pieza: ${item.mensajePieza}`;
-                        if (detalle === "Estrellado" && item.estrelladoParte) return `Estrellado: ${item.estrelladoParte}`;
-                        return detalle;
-                      }).join(", ") || "Ninguno"}
-                    </td>
-                    <td data-label="Acciones">
-                        <button onClick={() => eliminar(item.id)}>❌</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <h2>Resultados ({inventarioFiltrado.length})</h2>
+          <div className="inventory-grid">
+            {inventarioFiltrado.map((item) => (
+              <InventoryCard 
+                key={item.id} 
+                item={item} 
+                onEliminar={eliminar} 
+                onCambiarEstado={cambiarEstado} 
+              />
+            ))}
           </div>
         </div>
       )}
 
-      {/* Vista de Registro */}
       {vistaActiva === 'registro' && (
         <div id="registro-view">
             <h2>➕ Registrar Nuevo Equipo</h2>
@@ -210,7 +203,7 @@ export default function Home() {
                     <option value="">Accesorios</option>
                     {accesorios.map((a) => <option key={a}>{a}</option>)}
                 </select>
-                <input name="costo" placeholder="Costo" type="number" value={form.costo} onChange={handleFormChange} />
+                <input name="costo" placeholder="Costo (MXN)" type="number" value={form.costo} onChange={handleFormChange} />
                 <select name="estado" value={form.estado} onChange={handleFormChange}>
                     {estados.map((e) => <option key={e}>{e}</option>)}
                 </select>
@@ -223,7 +216,7 @@ export default function Home() {
                     {form.detalles.includes("Estrellado") && <input placeholder="¿Dónde está estrellado?" name="estrelladoParte" value={form.estrelladoParte} onChange={handleFormChange} />}
                     {form.detalles.includes("Otro") && <input placeholder="¿Qué otro detalle?" name="otroDetalle" value={form.otroDetalle} onChange={handleFormChange} />}
                 </fieldset>
-                <button onClick={guardar}>➕ Agregar al Inventario</button>
+                <button onClick={guardar}>Agregar al Inventario</button>
             </div>
         </div>
       )}
