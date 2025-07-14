@@ -2,75 +2,92 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  --color-primario: #2563eb;
-  --color-primario-hover: #1d4ed8;
-  --color-fondo: #f8fafc;
-  --color-contenedor: #ffffff;
-  --color-texto: #334155;
-  --color-borde: #e2e8f0;
-  --sombra: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --radio-borde: 0.5rem;
+  --color-primario: #3b82f6; /* Un azul más vibrante */
+  --color-primario-hover: #2563eb;
+  --color-fondo: #111827; /* Fondo principal oscuro (Gris-Azulado) */
+  --color-contenedor: #1f2937; /* Fondo de contenedores (Gris-Azulado más claro) */
+  --color-borde: #374151; /* Bordes sutiles */
+  --color-texto-principal: #f9fafb; /* Texto principal (casi blanco) */
+  --color-texto-secundario: #9ca3af; /* Texto secundario (gris claro) */
+  --sombra: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1);
+  --radio-borde: 0.75rem; /* Bordes más redondeados */
 }
 
 body {
   font-family: 'Inter', sans-serif;
   background-color: var(--color-fondo);
-  color: var(--color-texto);
+  color: var(--color-texto-principal);
   margin: 0;
   padding: 1rem;
 }
 
 /* === CONTENEDOR PRINCIPAL === */
 .container {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: auto;
-  background-color: var(--color-contenedor);
-  padding: 2rem;
+  background-color: transparent; /* El contenedor principal es transparente */
+  padding: 1rem;
   border-radius: var(--radio-borde);
-  box-shadow: var(--sombra);
+  box-shadow: none;
 }
 
 h1, h2 {
-  color: var(--color-primario);
+  color: var(--color-texto-principal);
   margin-top: 0;
   margin-bottom: 1.5rem;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: -0.025em;
 }
 
 h1 {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  font-size: 2.25rem;
 }
 
-/* === FORMULARIO === */
-.formulario {
+h2 {
+  font-size: 1.5rem;
+  border-bottom: 1px solid var(--color-borde);
+  padding-bottom: 1rem;
+}
+
+/* === FORMULARIO Y FILTROS === */
+.formulario, .filtros-container {
   display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  margin-bottom: 2rem;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin-bottom: 2.5rem;
+  background-color: var(--color-contenedor);
+  padding: 2rem;
+  border-radius: var(--radio-borde);
+  border: 1px solid var(--color-borde);
 }
 
 input, select {
   width: 100%;
-  padding: 0.75rem;
+  padding: 0.8rem 1rem;
   border-radius: var(--radio-borde);
   border: 1px solid var(--color-borde);
-  background-color: #fff;
+  background-color: #374151; /* Fondo de input más oscuro */
+  color: var(--color-texto-principal);
   font-family: inherit;
   font-size: 1rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: all 0.3s ease;
   box-sizing: border-box;
+}
+
+input::placeholder {
+  color: var(--color-texto-secundario);
 }
 
 input:focus, select:focus {
   outline: none;
   border-color: var(--color-primario);
-  box-shadow: 0 0 0 3px rgb(37 99 235 / 0.2);
+  background-color: var(--color-fondo);
+  box-shadow: 0 0 0 3px var(--color-primario-hover);
 }
 
 select:disabled {
-    background-color: #f1f5f9;
+    background-color: #374151;
+    opacity: 0.5;
     cursor: not-allowed;
 }
 
@@ -81,13 +98,13 @@ fieldset {
   border: 1px solid var(--color-borde);
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
 fieldset legend {
-  font-weight: 500;
+  font-weight: 600;
   padding: 0 0.5rem;
-  color: var(--color-primario);
+  color: var(--color-texto-principal);
 }
 
 fieldset label {
@@ -97,74 +114,36 @@ fieldset label {
 }
 
 fieldset input[type="checkbox"] {
-    width: auto;
+    width: 1.25em;
+    height: 1.25em;
+    accent-color: var(--color-primario);
 }
 
 .formulario button {
   grid-column: 1 / -1;
-  padding: 0.8rem 1.5rem;
+  padding: 1rem 1.5rem;
   border-radius: var(--radio-borde);
   border: none;
-  background-color: var(--color-primario);
+  background-image: linear-gradient(to right, var(--color-primario), #60a5fa);
   color: white;
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgb(0 0 0 / 0.2);
 }
 
 .formulario button:hover {
-  background-color: var(--color-primario-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 7px 10px rgb(0 0 0 / 0.2);
 }
 
-/* === TABLA DE INVENTARIO (ESCRITORIO) === */
-.table-container {
-    overflow-x: auto;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-}
-
-table th, table td {
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--color-borde);
-  vertical-align: middle;
-}
-
-table th {
-  font-weight: 600;
-  background-color: #f1f5f9;
-  font-size: 0.875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-table tr:last-child td {
-    border-bottom: none;
-}
-
-table button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 1.2rem;
-    padding: 0.25rem;
-    transition: transform 0.2s;
-}
-
-table button:hover {
-    transform: scale(1.2);
-}
-
-/* === ESTILOS PARA PESTAÑAS (VIEW SWITCHER) === */
+/* === PESTAÑAS (VIEW SWITCHER) === */
 .view-switcher {
   display: flex;
   gap: 0.5rem;
   margin-bottom: 2rem;
-  border-bottom: 2px solid var(--color-borde);
+  border-bottom: 1px solid var(--color-borde);
 }
 
 .view-switcher button {
@@ -173,15 +152,15 @@ table button:hover {
   background-color: transparent;
   cursor: pointer;
   font-size: 1rem;
-  font-weight: 500;
-  color: var(--color-texto);
-  border-bottom: 2px solid transparent;
-  transform: translateY(2px);
-  transition: color 0.2s, border-color 0.2s;
+  font-weight: 600;
+  color: var(--color-texto-secundario);
+  border-bottom: 3px solid transparent;
+  transform: translateY(1px);
+  transition: all 0.2s ease-in-out;
 }
 
 .view-switcher button:hover {
-  color: var(--color-primario);
+  color: var(--color-texto-principal);
 }
 
 .view-switcher button.active {
@@ -189,66 +168,122 @@ table button:hover {
   border-bottom-color: var(--color-primario);
 }
 
-/* === CONTENEDOR DE FILTROS === */
-.filtros-container {
+/* === NUEVA VISTA DE TARJETAS PARA EL INVENTARIO === */
+.inventory-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1rem;
-  margin-bottom: 2rem;
-  padding: 1.5rem;
-  background-color: #f8fafc;
-  border-radius: var(--radio-borde);
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
 }
 
-/* === DISEÑO RESPONSIVO PARA LA TABLA (MÓVIL) === */
+.inventory-card {
+  background-color: var(--color-contenedor);
+  border-radius: var(--radio-borde);
+  border: 1px solid var(--color-borde);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: var(--sombra);
+}
+
+.inventory-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--color-primario);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.card-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-texto-principal);
+}
+
+.card-header .item-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.item-status.disponible { background-color: #166534; color: #dcfce7; }
+.item-status.vendido { background-color: #991b1b; color: #fee2e2; }
+.item-status.reservado { background-color: #9a3412; color: #ffedd5; }
+
+.card-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.card-body .info-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.card-body .info-item span:first-child {
+  font-weight: 500;
+  color: var(--color-texto-secundario);
+}
+
+.card-details {
+  font-size: 0.9rem;
+  color: var(--color-texto-secundario);
+  border-top: 1px solid var(--color-borde);
+  padding-top: 1rem;
+}
+
+.card-footer {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-borde);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-footer .costo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-primario);
+}
+
+.card-footer button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.5rem;
+  color: var(--color-texto-secundario);
+  transition: all 0.2s ease;
+}
+
+.card-footer button:hover {
+  color: #ef4444; /* Rojo para eliminar */
+  transform: scale(1.1);
+}
+
+/* === OCULTAR TABLA VIEJA EN TODAS LAS VISTAS === */
+.table-container {
+  display: none;
+}
+
+/* === RESPONSIVIDAD PARA MÓVILES === */
 @media (max-width: 768px) {
   .container {
     padding: 1rem;
   }
-
-  h1 {
-    font-size: 1.5rem;
-  }
-
-  h2 {
-    font-size: 1.25rem;
-  }
-
-  table thead {
-    display: none;
-  }
-
-  table, table tbody, table tr, table td {
-    display: block;
-    width: 100%;
-  }
-
-  table tr {
-    margin-bottom: 1rem;
-    border-radius: var(--radio-borde);
-    border: 1px solid var(--color-borde);
-    overflow: hidden;
-  }
-
-  table td {
-    padding-left: 50%;
-    position: relative;
-    text-align: right;
-    border-bottom: 1px solid var(--color-borde);
-  }
-  
-  table td:last-child {
-      border-bottom: none;
-  }
-
-  table td::before {
-    content: attr(data-label);
-    position: absolute;
-    left: 1rem;
-    width: 45%;
-    padding-right: 1rem;
-    text-align: left;
-    font-weight: 600;
-    color: var(--color-primario);
+  h1 { font-size: 1.75rem; }
+  h2 { font-size: 1.25rem; }
+  .formulario, .filtros-container { padding: 1.5rem; }
+  .inventory-grid {
+    grid-template-columns: 1fr; /* Una sola columna en móviles */
   }
 }
